@@ -29,13 +29,13 @@ jobs:
       - name: Send e-mail
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ secrets.SMTP_SERVER }}
-          server_port: ${{ secrets.SMTP_PORT }}
-          username: ${{ secrets.SMTP_USERNAME }}
+          server_address: ${{ vars.SMTP_SERVER }}
+          server_port: ${{ vars.SMTP_PORT }}
+          username: ${{ vars.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "Daily Calendar Puzzle Output"
-          to: ${{ secrets.MAIL_TO }}
-          from: ${{ secrets.MAIL_FROM }}
+          to: ${{ vars.MAIL_TO }}
+          from: ${{ vars.MAIL_FROM }}
           content_type: text/html
           body: |
             <pre style="background:#222;color:#eee;font-family:monospace;">${{ steps.prepare.outputs.html }}</pre>
