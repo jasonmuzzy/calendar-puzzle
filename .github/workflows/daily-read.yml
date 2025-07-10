@@ -1,0 +1,43 @@
+name: Daily Read
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-read-and-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run read.ts and capture output
+        run: |
+          npx ts-node src/read.ts | tee output.txt
+      - name: Prepare HTML email with ANSI colors
+        run: |
+          ansi2html < output.txt > output.html
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+      - name: Send e-mail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Daily Calendar Puzzle Output"
+          to: ${{ secrets.MAIL_TO }}
+          from: ${{ secrets.MAIL_FROM }}
+          content_type: text/html
+          body: |
+            <pre style="background:#222;color:#eee;font-family:monospace;">${{ steps.prepare.outputs.html }}</pre>
+        env:
+          PYTHONIOENCODING: utf-8

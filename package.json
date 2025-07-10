@@ -1,0 +1,21 @@
+{
+  "name": "calendar-puzzle",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm i && node --nolazy -r ts-node/register src/read.ts",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "Jason Muzzy",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.7",
+    "jest": "^30.0.3",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
