@@ -20,6 +20,8 @@ jobs:
       - name: Run read.ts and capture output
         run: |
           npx ts-node src/read.ts | tee output.txt
+      - name: Install ansi2html
+        run: pip install ansi2html
       - name: Prepare HTML email with ANSI colors
         run: |
           ansi2html < output.txt > output.html
