@@ -23,8 +23,12 @@ jobs:
       - name: Install ansi2html
         run: pip install ansi2html
       - name: Prepare HTML email with ANSI colors
+        id: prepare_html
         run: |
           ansi2html < output.txt > output.html
+          echo "html<<EOF" >> $GITHUB_OUTPUT
+          cat output.html >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         shell: bash
         env:
           PYTHONIOENCODING: utf-8
@@ -39,7 +43,6 @@ jobs:
           to: ${{ vars.MAIL_TO }}
           from: ${{ vars.MAIL_FROM }}
           content_type: text/html
-          body: |
-            <pre style="background:#222;color:#eee;font-family:monospace;">${{ steps.prepare.outputs.html }}</pre>
+          body: ${{ steps.prepare_html.outputs.html }}
         env:
           PYTHONIOENCODING: utf-8
