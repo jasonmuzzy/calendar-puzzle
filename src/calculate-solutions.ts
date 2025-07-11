@@ -3,7 +3,6 @@ import * as path from 'node:path';
 
 class Orientation {
 
-    colorIndex: number | undefined = undefined;
     coordinates: [number, number][];
     piece: Piece;
     shape: string[];
@@ -79,8 +78,6 @@ type Blocked = '#';
 
 class Space<T extends Days | Months | Dates | Blocked> {
 
-    // The four-color theorem states that any map in a plane can be colored using a max of four colors
-    static ColorPalette = [101, 102, 104, 40]; // Red, green, blue, black
     coveredBy: null | Orientation = null;
     type: SpaceType;
     value: T;
@@ -100,9 +97,9 @@ class Space<T extends Days | Months | Dates | Blocked> {
 
     get label() {
         let label: string;
-        if (this.type === 'blocked') label = '  ';
-        else if (this.coveredBy) label = `\x1b[${Space.ColorPalette[this.coveredBy.colorIndex ?? 0]}m  \x1b[0m`;
-        else label = typeof this.value === 'number' ? this.value.toString().padStart(2, ' ') : this.value.substring(0, 2);
+        if (this.type === 'blocked') label = ' ';
+        else if (this.coveredBy) label = this.coveredBy.piece.id.toString();
+        else label = this instanceof DaySpace ? 'd' : this instanceof MonthSpace ? 'm' : 'D';
         return label;
     }
 
@@ -136,7 +133,7 @@ class BlockedSpace extends Space<Blocked> {
     }
 }
 
-interface Solution {
+interface BoardDate {
     day: DaySpace | undefined,
     month: MonthSpace | undefined,
     date: DateSpace | undefined
@@ -155,8 +152,17 @@ class Board {
         [new BlockedSpace(), new BlockedSpace(), new BlockedSpace(), new BlockedSpace(), new DaySpace('Thu'), new DaySpace('Fri'), new DaySpace('Sat')]
     ]
 
-    fits(orientation: Orientation, x: number, y: number) {
-        return orientation.coordinates.every(([x1, y1]) => this.spaces[y + y1][x + x1].isEmpty());
+    date() {
+        return this.spaces.flat().filter(space => space.isEmpty()).reduce((pv, space) => {
+            if (space instanceof DaySpace) {
+                pv.day = space;
+            } else if (space instanceof MonthSpace) {
+                pv.month = space;
+            } else if (space instanceof DateSpace) {
+                pv.date = space;
+            }
+            return pv;
+        }, { day: undefined, month: undefined, date: undefined } as BoardDate);
     }
 
     *emptySpaces(skip0_0: boolean): Generator<[number, number], void, unknown> {
@@ -169,7 +175,11 @@ class Board {
         }
     }
 
-    isValid(solution: Solution) {
+    fits(orientation: Orientation, x: number, y: number) {
+        return orientation.coordinates.every(([x1, y1]) => this.spaces[y + y1][x + x1].isEmpty());
+    }
+
+    isValid(solution: BoardDate) {
         return solution.day !== undefined && solution.month !== undefined && solution.date !== undefined && solution.date.value <= (solution.month?.value === 'Feb' ? 29 : ['Apr', 'Jun', 'Sep', 'Nov'].includes(solution.month?.value.toString()) ? 30 : 31);
     }
 
@@ -179,68 +189,16 @@ class Board {
 
     remove(orientation: Orientation, x: number, y: number) {
         orientation.coordinates.forEach(([x1, y1]) => this.spaces[y + y1][x + x1].uncover());
-        orientation.colorIndex = undefined;
     }
 
-    solution() {
-        return this.spaces.flat().filter(space => space.isEmpty()).reduce((pv, space) => {
-            if (space instanceof DaySpace) {
-                pv.day = space;
-            } else if (space instanceof MonthSpace) {
-                pv.month = space;
-            } else if (space instanceof DateSpace) {
-                pv.date = space;
-            }
-            return pv;
-        }, { day: undefined, month: undefined, date: undefined } as Solution);
-    }
-
-    toString(solution: Solution) {
-
-        // Build a graph of all adjacent pieces
-        const graph: Map<Orientation, Set<Orientation>> = new Map();
-        for (let [y, row] of this.spaces.entries()) {
-            for (let [x, space] of row.entries()) {
-                if (space.coveredBy) {
-                    let neighbors = graph.get(space.coveredBy);
-                    if (neighbors === undefined) {
-                        neighbors = new Set();
-                        graph.set(space.coveredBy!, neighbors);
-                    }
-                    for (let [x1, y1] of [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]]) {
-                        if (x1 >= 0 && y1 >= 0 && y1 < this.spaces.length && x1 < this.spaces[y1].length) {
-                            if (this.spaces[y1][x1].coveredBy && this.spaces[y1][x1].coveredBy !== space.coveredBy) {
-                                neighbors.add(this.spaces[y1][x1].coveredBy);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Greedily assign colors
-        for (let [orientation, neighbors] of graph.entries()) {
-            let usedColors: Set<number> = new Set();
-            for (let neighbor of neighbors) {
-                if (neighbor.colorIndex !== undefined) {
-                    usedColors.add(neighbor.colorIndex);
-                }
-            }
-            orientation.colorIndex = 0;
-            while (usedColors.has(orientation.colorIndex)) {
-                orientation.colorIndex++;
-            }
-        }
-
-        return `${solution.day?.value} ${solution.month?.value} ${solution.date?.value}\n`
-            + this.spaces.map(row => row.map(space => space.label).join('')).join('\n')
-            + '\n\n';
-            
+    toString(solution: BoardDate) {
+        return `${solution.day?.value} ${solution.month?.value} ${solution.date?.value.toString().padStart(2, ' ')} `
+            + this.spaces.map(row => row.map(space => space.label).join('')).join('');
     }
 
 }
 
-async function placeNext(board: Board, pieces: Piece[], skip0_0: boolean, fileHandle: fs.FileHandle, level: number) {
+function placeNext(board: Board, pieces: Piece[], solutions: Set<string>, skip0_0: boolean) {
 
     let checked = 0;
     let placed = false;
@@ -252,9 +210,6 @@ async function placeNext(board: Board, pieces: Piece[], skip0_0: boolean, fileHa
             if (placed) {
                 return;
             } else {
-                if (level === 0) {
-                    console.log(board.toString({ day: undefined, month: undefined, date: undefined }), pieces.length, skip0_0, level);
-                }
                 throw new Error('Invalid');
             }
         }
@@ -264,15 +219,17 @@ async function placeNext(board: Board, pieces: Piece[], skip0_0: boolean, fileHa
                 if (board.fits(orientation, x, y)) {
                     board.lay(orientation, x, y);
                     if (pieces.length === 1) {
-                        const solution = board.solution();
-                        if (board.isValid(solution)) {
-                            const str = board.toString(solution);
-                            console.log(str);
-                            await fileHandle.write(str);
+                        const date = board.date();
+                        if (board.isValid(date)) {
+                            const solution = board.toString(date);
+                            if (!solutions.has(solution)) {
+                                solutions.add(solution);
+                                console.log(solution);
+                            }
                         }
                     } else {
                         try {
-                            await placeNext(board, pieces.filter((piece, j) => j !== i), skip0_0, fileHandle, level + 1);
+                            placeNext(board, pieces.filter((piece, j) => j !== i), solutions, skip0_0);
                         } catch { }
                     }
                     placed = true;
@@ -301,15 +258,20 @@ async function main() {
     ].map(shape => new Piece(shape));
 
     const board = new Board();
+    const solutions: Set<string> = new Set();
+    placeNext(board, pieces, solutions, true); // Shift starting piece to the right of (0, 0)
+    placeNext(board, pieces, solutions, false);
+
     const filePath = path.join(__dirname, '..', 'solutions.txt');
-    const fileHandle = await fs.open(filePath, 'w');
-    await placeNext(board, pieces, true, fileHandle, 0); // Shift starting piece to the right of (0, 0)
-    await placeNext(board, pieces, false, fileHandle, 0);
-    await fileHandle.close();
+    await fs.writeFile(filePath, [...solutions].sort((a, b) => a < b ? -1 : 1).join('\n'), { encoding: 'utf-8' });
 
 }
 
+// main: 2:47:06.840 (h:mm:ss.mmm)
+// 8,153 solutions
+console.time('main');
 main();
+console.timeEnd('main');
 
 export {
     Board,
