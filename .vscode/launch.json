@@ -30,6 +30,22 @@
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
             "console": "integratedTerminal",
+        },
+        {
+            "name": "Current TS File 2",
+            "type": "node",
+            "request": "launch",
+            "args": [
+                "${relativeFile}"
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            "console": "integratedTerminal",
         }
     ]
 }

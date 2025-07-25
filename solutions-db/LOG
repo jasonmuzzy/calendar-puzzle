@@ -1,0 +1,13 @@
+2025/07/24-20:47:35.144 50e0 Recovering log #1309
+2025/07/24-20:47:35.148 50e0 Level-0 table #1312: started
+2025/07/24-20:47:35.153 50e0 Level-0 table #1312: 104446 bytes OK
+2025/07/24-20:47:35.156 50e0 Delete type=0 #1309
+2025/07/24-20:47:35.156 50e0 Delete type=3 #4
+2025/07/24-20:47:36.021 261c Compacting 2@0 + 5@1 files
+2025/07/24-20:47:36.046 261c Generated table #1314@0: 30603 keys, 1160564 bytes
+2025/07/24-20:47:36.094 261c Generated table #1315@0: 58273 keys, 2209520 bytes
+2025/07/24-20:47:36.142 261c Generated table #1316@0: 60687 keys, 2209812 bytes
+2025/07/24-20:47:36.175 261c Generated table #1317@0: 43082 keys, 1515337 bytes
+2025/07/24-20:47:36.221 261c Generated table #1318@0: 51210 keys, 1896859 bytes
+2025/07/24-20:47:36.222 261c Compacted 2@0 + 5@1 files => 8992092 bytes
+2025/07/24-20:47:36.222 261c compacted to: files[ 0 5 26 0 0 0 0 ]

@@ -1,9 +1,9 @@
 {
   "name": "calendar-puzzle",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
-    "start": "npm i && node --nolazy -r ts-node/register src/print-today.ts",
+    "calculate": "node --nolazy -r ts-node/register src/calculate.ts",
+    "print-today": "npm i && node --nolazy -r ts-node/register src/print-today.ts",
     "test": "jest"
   },
   "keywords": [],
@@ -12,8 +12,10 @@
   "description": "",
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/level": "^6.0.3",
     "@types/node": "^24.0.7",
     "jest": "^30.0.3",
+    "level": "^10.0.0",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"

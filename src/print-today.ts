@@ -1,5 +1,4 @@
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { Level } from 'level';
 
 class Piece {
 
@@ -16,7 +15,7 @@ class Piece {
 function colorCoded(value: string) {
 
     // The four-color theorem states that any map in a plane can be colored using a max of four colors
-    const ColorPalette = [101, 102, 104, 40]; // Red, green, blue, black (103, yellow, is ugly)
+    const ColorPalette = [101, 102, 104, 100]; // Red, green, blue, gray (103, yellow, is ugly)
 
     const d = value.substring(0, 2);
     const m = { 'Mar': 'Mr', 'May': 'My', 'Jun': 'Je', 'Jul': 'Jl' }[value.substring(4, 7)] ?? value.substring(4, 6); // Short month names
@@ -71,19 +70,33 @@ function colorCoded(value: string) {
         }
     }
 
-    return grid.map(row => row.map(space => ({ 'd': d, 'm': m, 'D': D, ' ': '  ' }[space] ?? `\x1b[${ColorPalette[pieces[space].colorIndex ?? 0]}m  \x1b[0m`)).join('')).join('\n');
+    return grid.map(row => row.map(space => ({ 'd': d, 'm': m, 'D': D, ' ': '  ', 'X': '  ' }[space] ?? `\x1b[${ColorPalette[pieces[space]?.colorIndex ?? 0]}m  \x1b[0m`)).join('')).join('\n');
 
 }
 
 async function main(date: string) {
+
     console.log(date);
-    const filePath = path.join(__dirname, '..', 'solutions.txt');
-    (await fs.readFile(filePath, { encoding: 'utf-8' })).split('\n')
-        .filter(row => row.substring(0, 10) === date)
-        .forEach((solution, i) => {
-            console.log((i === 0 ? '' : '\n') + colorCoded(solution));
-        });
+
+    const db = new Level<string, string>('./solutions-db', { valueEncoding: 'utf8' });
+    await db.open();
+
+    for await (const [solution, _] of db.iterator()) {
+        if (solution.substring(0, 10) === date) {
+            console.log('\n' + colorCoded(solution));
+        }
+    }
+
+    await db.close();
+
 }
 
-const date = (new Date()).toString().split(' ').slice(0, 3).join(' '); // Date in ddd MMM d format e.g. Thu Jul 10
-main(date);
+const dddMMMd = (new Date()).toString().split(' ').slice(0, 3).join(' '); // Date in ddd MMM d format e.g. Thu Jul 10
+main(dddMMMd);
+
+export {
+    colorCoded,
+    dddMMMd,
+    main,
+    Piece
+}
