@@ -81,10 +81,18 @@ async function main(date: string) {
     const db = new Level<string, string>('./solutions-db', { valueEncoding: 'utf8' });
     await db.open();
 
+    let count = 0;
     for await (const [solution, _] of db.iterator()) {
         if (solution.substring(0, 10) === date) {
-            console.log('\n' + colorCoded(solution));
+            if (count < 5) {
+                console.log('\n' + colorCoded(solution));
+            }
+            count++;
         }
+    }
+
+    if (count > 5) {
+        console.log(`\n...and ${count - 5} more!`)
     }
 
     await db.close();
