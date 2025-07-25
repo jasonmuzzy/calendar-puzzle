@@ -74,7 +74,7 @@ function colorCoded(value: string) {
 
 }
 
-async function main(date: string) {
+async function main(date: string = dateInPST()) {
 
     console.log(date);
 
@@ -99,12 +99,38 @@ async function main(date: string) {
 
 }
 
-const dddMMMd = (new Date()).toString().split(' ').slice(0, 3).join(' '); // Date in ddd MMM d format e.g. Thu Jul 10
-main(dddMMMd);
+function dateInPST(date: Date = new Date()) {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Los_Angeles',
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+    });
+
+    let weekday = '';
+    let month = '';
+    let day = '';
+
+    for (const part of formatter.formatToParts(date)) {
+        if (part.type === 'weekday') {
+            weekday = part.value;
+        } else if (part.type === 'month') {
+            month = part.value;
+        } else if (part.type === 'day') {
+            day = part.value.padStart(2, ' ');
+        }
+    }
+
+    return `${weekday} ${month} ${day}`;
+}
+
+if (require.main === module) {
+    main();
+}
 
 export {
     colorCoded,
-    dddMMMd,
+    dateInPST,
     main,
     Piece
 }

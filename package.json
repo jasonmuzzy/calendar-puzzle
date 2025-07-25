@@ -2,8 +2,9 @@
   "name": "calendar-puzzle",
   "version": "1.0.0",
   "scripts": {
-    "calculate": "node --nolazy -r ts-node/register src/calculate.ts",
+    "calculate": "npm i && node --nolazy -r ts-node/register src/calculate.ts",
     "print-today": "npm i && node --nolazy -r ts-node/register src/print-today.ts",
+    "reddit": "npm i && node --nolazy -r ts-node/register src/reddit.ts",
     "test": "jest"
   },
   "keywords": [],
