@@ -15,7 +15,7 @@ class Piece {
 function colorCoded(value: string) {
 
     // The four-color theorem states that any map in a plane can be colored using a max of four colors
-    const ColorPalette = [101, 102, 104, 100]; // Red, green, blue, gray (103, yellow, is ugly)
+    const ColorPalette = [101, 102, 104, 100, 103]; // Red, green, blue, gray (103, yellow, is ugly)
 
     const d = value.substring(0, 2);
     const m = { 'Mar': 'Mr', 'May': 'My', 'Jun': 'Je', 'Jul': 'Jl' }[value.substring(4, 7)] ?? value.substring(4, 6); // Short month names
