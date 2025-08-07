@@ -1,54 +1,96 @@
-import { Worker } from 'worker_threads';
-import os from 'os';
-import { Level } from 'level';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { Worker } from 'node:worker_threads';
 
-const pieces: string[][] = [
-  ["XXX", "XX "],
-  ["XXX", "X X"],
-  ["XXXX", "X   "],
-  ["XXXX"],
-  ["XXX", "X  ", "X  "],
-  ["XXX ", "  XX"],
-  ["XX ", " XX"],
-  ["XXX", "X  "],
-  ["XXX", " X ", " X "],
-  ["XX ", " X ", " XX"],
-];
+import { shapeToPiece } from './piece';
 
-const maxWorkers = os.cpus().length;
-let activeWorkers = 0;
-let pieceIndex = 0;
+export async function main() {
 
-async function main() {
-  const db = new Level('./solutions-db', { valueEncoding: 'utf8' });
-  await db.open();
+    const base = [
+        'Jan Feb Mar Apr May Jun #',
+        'Jul Aug Sep Oct Nov Dec #',
+        '1   2   3   4   5   6   7',
+        '8   9   10  11  12  13  14',
+        '15  16  17  18  19  20  21',
+        '22  23  24  25  26  27  28',
+        '29  30  31  Sun Mon Tue Wed',
+        '#   #   #   #   Thu Fri Sat',
+    ].join(' ').split(/\s+/g);
 
-  function startWorker(pieceIdx: number) {
-    activeWorkers++;
-    const worker = new Worker(require.resolve('./worker'), {
-      workerData: { pieceIdx, pieces },
-    });
-    worker.on('message', async (solution: string) => {
-      await db.put(solution, '1').catch(() => { });
-      worker.postMessage('ack'); // Send ack after DB update
-    });
-    worker.on('exit', async () => {
-      activeWorkers--;
-      if (pieceIndex < pieces.length) {
-        startWorker(pieceIndex++);
-      } else if (activeWorkers === 0) {
-        await db.close();
-        console.log(`Done. Solutions written to solutions-db`);
-      }
-    });
-  }
+    const board = [
+        '......#',
+        '......#',
+        '.......',
+        '.......',
+        '.......',
+        '.......',
+        '.......',
+        '####...'
+    ].map(row => row.split(''));
 
-  // Start up to maxWorkers
-  while (pieceIndex < pieces.length && activeWorkers < maxWorkers) {
-    startWorker(pieceIndex++);
-  }
+    const pieces = [
+        { id: 0, shape: ["XXX", "XX "] },
+        { id: 1, shape: ["XXX", "X X"] },
+        { id: 2, shape: ["XXXX", "X   "] },
+        { id: 3, shape: ["XXXX"] },
+        { id: 4, shape: ["XXX", "X  ", "X  "] },
+        { id: 5, shape: ["XXX ", "  XX"] },
+        { id: 6, shape: ["XX ", " XX"] },
+        { id: 7, shape: ["XXX", "X  "] },
+        { id: 8, shape: ["XXX", " X ", " X "] },
+        { id: 9, shape: ["XX ", " X ", " XX"] },
+    ].map(({ id, shape }) => shapeToPiece(shape, id, board)).sort((a, b) => a.placements.length - b.placements.length);
+
+    const maxWorkers = Math.max(1, os.cpus().length - 2);
+    let activeWorkers = 0;
+    let placementIndex = 0;
+
+    function startWorker(placementId: number) {
+
+        activeWorkers++;
+
+        console.log(`Placement ${placementId} starting...`);
+        const worker = new Worker(require.resolve('./worker'), {
+            workerData: { placementId, board, base, pieces },
+        });
+
+        worker.on('message', async (solution: string) => {
+            const empties = [...solution.matchAll(/\./g)].map(({ index }) => index!);
+            const weekday = base[empties[2]];
+            const month = base[empties[0]];
+            const day = base[empties[1]];
+            await fs.writeFile(path.join(__dirname, '..', 'solutions', weekday, month, `${weekday}_${month}_${day}.txt`), solution + '\n', { flag: 'a' });
+            worker.postMessage('ack');
+        });
+
+        worker.on('exit', async () => {
+            activeWorkers--;
+            if (placementIndex < pieces[0].placements.length) {
+                startWorker(placementIndex++);
+            } else if (activeWorkers === 0) {
+                console.timeEnd('main'); // main: 2:19:59.186 (h:mm:ss.mmm)
+            }
+        });
+    }
+
+    // Create directories and initialize files
+    for (const weekday of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']) {
+        for (const month of ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']) {
+            await fs.mkdir(path.join(__dirname, '..', 'solutions', weekday, month), { recursive: true });
+            for (const day of [...Array(month === 'Feb' ? 29 : ['Apr', 'Jun', 'Sep', 'Nov'].includes(month) ? 30 : 31).keys()].map(day => (day + 1).toString())) {
+                await fs.writeFile(path.join(__dirname, '..', 'solutions', weekday, month, `${weekday}_${month}_${day}.txt`), '');
+            }
+        }
+    }
+    
+    while (placementIndex < pieces[0].placements.length && activeWorkers < maxWorkers) {
+        startWorker(placementIndex++);
+    }
+
 }
 
 if (require.main === module) {
-  main().catch(console.error);
+    console.time('main');
+    main();
 }

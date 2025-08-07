@@ -7,6 +7,10 @@
     "reddit": "npm i && node --nolazy -r ts-node/register src/reddit.ts",
     "test": "jest"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jasonmuzzy/calendar-puzzle.git"
+  },
   "keywords": [],
   "author": "Jason Muzzy",
   "license": "MIT",

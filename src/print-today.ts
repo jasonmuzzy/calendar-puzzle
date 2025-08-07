@@ -1,6 +1,8 @@
-import { Level } from 'level';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { EMPTY } from './piece';
 
-class Piece {
+export class Piece {
 
     colorIndex: number | undefined = undefined;
     neighbors: Set<Piece> = new Set();
@@ -12,20 +14,13 @@ class Piece {
 
 }
 
-function colorCoded(value: string) {
-
-    // The four-color theorem states that any map in a plane can be colored using a max of four colors
-    const ColorPalette = [101, 102, 104, 100, 103]; // Red, green, blue, gray (103, yellow, is ugly)
-
-    const d = value.substring(0, 2);
-    const m = { 'Mar': 'Mr', 'May': 'My', 'Jun': 'Je', 'Jul': 'Jl' }[value.substring(4, 7)] ?? value.substring(4, 6); // Short month names
-    const D = value.substring(8, 10);
+export function colorCoded(date: string, solution: string) {
 
     const pieces: { [key: string]: Piece } = {};
 
     const grid: string[][] = [];
-    for (let i = 11; i < 67; i += 7) {
-        grid.push(value.slice(i, i + 7).split(''));
+    for (let i = 0; i < 56; i += 7) {
+        grid.push(solution.slice(i, i + 7).split(''));
     }
 
     // Build a graph of all adjacent pieces
@@ -70,36 +65,33 @@ function colorCoded(value: string) {
         }
     }
 
-    return grid.map(row => row.map(space => ({ 'd': d, 'm': m, 'D': D, ' ': '  ', 'X': '  ' }[space] ?? `\x1b[${ColorPalette[pieces[space]?.colorIndex ?? 0]}m  \x1b[0m`)).join('')).join('\n');
+    // The four-color theorem states that any map in a plane can be colored using a max of four colors
+    const ColorPalette = [101, 102, 104, 103, 100]; // Red, green, blue, yellow, gray
+    const bases = date.split(/\s+/g).map(part => (({ 'Mar': 'Mr', 'May': 'My', 'Jun': 'Je', 'Jul': 'Jl' }[part]) ?? part).substring(0, 2).padStart(2, ' '));
+    return grid.map(row => row.map(space => (space === EMPTY ? bases.shift() : space === '#' ? '  ' : `\x1b[${ColorPalette[pieces[space]?.colorIndex ?? 0]}m  \x1b[0m`)).join('')).join('\n');
 
 }
 
-async function main(date: string = dateInPST()) {
+export async function main(date: string = dateInPST()) {
 
     console.log(date);
 
-    const db = new Level<string, string>('./solutions-db', { valueEncoding: 'utf8' });
-    await db.open();
+    const [weekday, month, day] = date.split(/\s+/g);
+    const filename = `${weekday}_${month}_${day}.txt`;
+    const solutions = (await fs.readFile(path.join(__dirname, '..', 'solutions', weekday, month, filename), { encoding: 'utf8' })).split('\n').filter(row => row !== '');
 
-    let count = 0;
-    for await (const [solution, _] of db.iterator()) {
-        if (solution.substring(0, 10) === date) {
-            if (count < 5) {
-                console.log('\n' + colorCoded(solution));
-            }
-            count++;
-        }
+    for (const [i, solution] of solutions.entries()) {
+        if (i === 5) break;
+        console.log('\n' + colorCoded(date, solution));
     }
 
-    if (count > 5) {
-        console.log(`\n...and ${count - 5} more!`)
+    if (solutions.length > 5) {
+        console.log(`\n...and ${solutions.length - 5} more!`)
     }
-
-    await db.close();
 
 }
 
-function dateInPST(date: Date = new Date()) {
+export function dateInPST(date: Date = new Date()) {
     const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/Los_Angeles',
         weekday: 'short',
@@ -126,11 +118,4 @@ function dateInPST(date: Date = new Date()) {
 
 if (require.main === module) {
     main();
-}
-
-export {
-    colorCoded,
-    dateInPST,
-    main,
-    Piece
 }
