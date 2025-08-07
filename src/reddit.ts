@@ -13,9 +13,8 @@ export async function main() {
         const solutions = (await fs.readFile(path.join(__dirname, '..', 'solutions', weekday, month, filename), { encoding: 'utf8' })).split('\n').filter(row => row !== '');
         if (filename === 'Fri_Jul_25.txt') {
             todayCount = solutions.length;
-        } else {
-            bigShowCount += solutions.length;
         }
+        bigShowCount += solutions.length;
     }
 
     console.log(`Today: ${todayCount}\nBig Show: ${bigShowCount}`);
