@@ -14,7 +14,7 @@ export class Piece {
 
 }
 
-export function colorCoded(date: string, solution: string) {
+export function colorCoded(date: string[], solution: string) {
 
     const pieces: { [key: string]: Piece } = {};
 
@@ -67,16 +67,16 @@ export function colorCoded(date: string, solution: string) {
 
     // The four-color theorem states that any map in a plane can be colored using a max of four colors
     const ColorPalette = [101, 102, 104, 103, 100]; // Red, green, blue, yellow, gray
-    const bases = date.split(/\s+/g).map(part => (({ 'Mar': 'Mr', 'May': 'My', 'Jun': 'Je', 'Jul': 'Jl' }[part]) ?? part).substring(0, 2).padStart(2, ' '));
+    const bases = date.map(part => (({ 'Mar': 'Mr', 'May': 'My', 'Jun': 'Je', 'Jul': 'Jl' }[part]) ?? part).substring(0, 2).padStart(2, ' '));
     return grid.map(row => row.map(space => (space === EMPTY ? bases.shift() : space === '#' ? '  ' : `\x1b[${ColorPalette[pieces[space]?.colorIndex ?? 0]}m  \x1b[0m`)).join('')).join('\n');
 
 }
 
-export async function main(date: string = dateInPST()) {
+export async function main(date = dateInPST()) {
 
     console.log(date);
 
-    const [weekday, month, day] = date.split(/\s+/g);
+    const [month, day, weekday] = date;
     const filename = `${weekday}_${month}_${day}.txt`;
     const solutions = (await fs.readFile(path.join(__dirname, '..', 'solutions', weekday, month, filename), { encoding: 'utf8' })).split('\n').filter(row => row !== '');
 
@@ -113,7 +113,7 @@ export function dateInPST(date: Date = new Date()) {
         }
     }
 
-    return `${weekday} ${month} ${day}`;
+    return [month, day, weekday] as [string, string, string];
 }
 
 if (require.main === module) {

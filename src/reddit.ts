@@ -8,7 +8,7 @@ export async function main() {
     let bigShowCount = 0;
 
     for (let d = new Date(`Fri Jul 25, 2025`); d <= new Date(`Thu Dec 25, 2025`); d.setDate(d.getDate() + 1)) {
-        const [weekday, month, day] = dateInPST(d).split(/\s+/g);
+        const [month, day, weekday] = dateInPST(d);
         const filename = `${weekday}_${month}_${day}.txt`;
         const solutions = (await fs.readFile(path.join(__dirname, '..', 'solutions', weekday, month, filename), { encoding: 'utf8' })).split('\n').filter(row => row !== '');
         if (filename === 'Fri_Jul_25.txt') {
