@@ -74,11 +74,11 @@ export function colorCoded(date: string[], solution: string) {
 
 export async function main(date = dateInPST()) {
 
-    console.log(date);
-
     const [month, day, weekday] = date;
     const filename = `${weekday}_${month}_${day}.txt`;
     const solutions = (await fs.readFile(path.join(__dirname, '..', 'solutions', weekday, month, filename), { encoding: 'utf8' })).split('\n').filter(row => row !== '');
+
+    console.log(weekday, month, day);
 
     for (const [i, solution] of solutions.entries()) {
         if (i === 5) break;
@@ -109,7 +109,7 @@ export function dateInPST(date: Date = new Date()) {
         } else if (part.type === 'month') {
             month = part.value;
         } else if (part.type === 'day') {
-            day = part.value.padStart(2, ' ');
+            day = part.value;
         }
     }
 
